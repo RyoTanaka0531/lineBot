@@ -6,12 +6,18 @@ use GuzzleHttp\Client;
 
 class Gurunavi
 {
-    public function searchRestaurants($word)
+    //ぐるなびのレストラン検索APIのURLということを変数名で明示
+    //クラス定数の定義
+    private const RESTAURANTS_SEARCH_API_URL = 'https://api.gnavi.co.jp/RestSearchAPI/v3/';
+
+    //ユーザーから送られてくる$wordが文字列であることをstringをつけて宣言
+    public function searchRestaurants(string $word): array
     {
         //GuzzleのClientクラス（インスタンス）を生成
         $client = new Client();
         $response = $client
-            ->get('https://api.gnavi.co.jp/RestSearchAPI/v3/', [
+            //selfはGurunaviクラス自身を指している
+            ->get(self::RESTAURANTS_SEARCH_API_URL, [
                 //queryをキーとする連想配列でリクエストパラメータを指定
                 'query' => [
                     'keyid' => env('GURUNAVI_ACCESS_KEY'),
@@ -19,6 +25,7 @@ class Gurunavi
                     //半角スペースがあればそれを、カンマに置き換える
                     'freeword' => str_replace(' ', ',', $word),
                 ],
+                'http_errors' => false,
             ]);
 
             //PHPで取り扱いやすくするため、json_decode関数を使って連想配列に変換している
