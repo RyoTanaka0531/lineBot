@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Log;
 use LINE\LINEBot;
 use LINE\LINEBot\HTTPClient\CurlHTTPClient;
 use LINE\LINEBot\Event\MessageEvent\TextMessage;
+use LINE\LINEBot\MessageBuilder\FlexMessageBuilder;
+use LINE\LINEBot\MessageBuilder\Flex\ContainerBuilder\CarouselContainerBuilder;
 use App\Services\Gurunavi;
+use App\Services\RestaurantBubbleBuilder;
+
 
 class LineBotController extends Controller
 {
@@ -52,29 +56,46 @@ class LineBotController extends Controller
                 $replyText = $gurunaviResponse['error'][0]['message'];
                 $replyToken = $event->getReplyToken();
                 $lineBot->replyText($replyToken, $replyText);
+                continue;
             }
 
-            $replyText = '';
-            foreach($gurunaviResponse['rest'] as $restaurant){
-                $replyText .=
-                    $restaurant['name'] . "\n" .
-                    $restaurant['url'] . "\n" .
-                    "\n";
-            }
+            // $replyText = '';
+            // foreach($gurunaviResponse['rest'] as $restaurant){
+            //     $replyText .=
+            //         $restaurant['name'] . "\n" .
+            //         $restaurant['url'] . "\n" .
+            //         "\n";
+            // }
 
             //$eventはTextMessageクラスのインスタンスである
             //Webhookとは友だち追加やメッセージの送信のようなイベントが発生すると、LINEプラットフォームからWebhook URL(ボットサーバー)にHTTPS POSTリクエストが送信される
             //応答メッセージを送るには、Webhookイベントオブジェクトに含まれる応答トークンが必要
             //イベントが発生するとWebhookを使って通知され、応答できるイベントには応答トークンが発行される
             //getReplyTokenメソッドで、応答トークン(replyToken)を取り出す
-            $replyToken = $event->getReplyToken();
+            // $replyToken = $event->getReplyToken();
 
             //getTextメソッドは送られてきたメッセージのテキストを取り出す
             // $replyText = $event->getText();
 
             //LINEBotクラスのreplyTextメソッドで、テキストメッセージでの返信が行われる
             //第一引数には応答トークンを、第二引数には返信内容のテキストを渡す
-            $lineBot->replyText($replyToken, $replyText);
+            // $lineBot->replyText($replyToken, $replyText);
+
+            $bubbles = [];
+            foreach ($gurunaviResponse['rest'] as $restaurant) {
+                $bubble = RestaurantBubbleBuilder::builder();
+                $bubble->setContents($restaurant);
+                $bubbles[] = $bubble;
+            }
+
+            $carousel = CarouselContainerBuilder::builder();
+            $carousel->setContents($bubbles);
+
+            $flex = FlexMessageBuilder::builder();
+            $flex->setAltText('飲食店検索結果');
+            $flex->setContents($carousel);
+
+            $lineBot->replyMessage($event->getReplyToken(), $flex);
         }
     }
 }
