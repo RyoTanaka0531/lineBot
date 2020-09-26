@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use LINE\LINEBot;
 use LINE\LINEBot\HTTPClient\CurlHTTPClient;
 use LINE\LINEBot\Event\MessageEvent\TextMessage;
+use App\Services\Gurunavi;
 
 class LineBotController extends Controller
 {
@@ -16,7 +17,7 @@ class LineBotController extends Controller
         return view('linebot.index');
     }
 
-    public function parrot(Request $request)
+    public function restaurants(Request $request)
     {
         Log::debug($request->header());
         Log::debug($request->input());
@@ -44,6 +45,23 @@ class LineBotController extends Controller
                 continue;
             }
 
+            $gurunavi = new Gurunavi();
+            $gurunaviResponse = $gurunavi->searchRestaurants($event->getText());
+
+            if(array_key_exists('error', $gurunaviResponse)){
+                $replyText = $gurunaviResponse['error'][0]['message'];
+                $replyToken = $event->getReplyToken();
+                $lineBot->replyText($replyToken, $replyText);
+            }
+
+            $replyText = '';
+            foreach($gurunaviResponse['rest'] as $restaurant){
+                $replyText .=
+                    $restaurant['name'] . "\n" .
+                    $restaurant['url'] . "\n" .
+                    "\n";
+            }
+
             //$eventはTextMessageクラスのインスタンスである
             //Webhookとは友だち追加やメッセージの送信のようなイベントが発生すると、LINEプラットフォームからWebhook URL(ボットサーバー)にHTTPS POSTリクエストが送信される
             //応答メッセージを送るには、Webhookイベントオブジェクトに含まれる応答トークンが必要
@@ -52,7 +70,7 @@ class LineBotController extends Controller
             $replyToken = $event->getReplyToken();
 
             //getTextメソッドは送られてきたメッセージのテキストを取り出す
-            $replyText = $event->getText();
+            // $replyText = $event->getText();
 
             //LINEBotクラスのreplyTextメソッドで、テキストメッセージでの返信が行われる
             //第一引数には応答トークンを、第二引数には返信内容のテキストを渡す
