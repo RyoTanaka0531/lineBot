@@ -15,6 +15,9 @@ class Gurunavi
     {
         //GuzzleのClientクラス（インスタンス）を生成
         $client = new Client();
+        //Guzzleのgetメソッドでgetリクエストが行える
+        //第一引数にリクエスト先のURL
+        //第二引数にオプションとなる情報を連想配列で渡す
         $response = $client
             //selfはGurunaviクラス自身を指している
             ->get(self::RESTAURANTS_SEARCH_API_URL, [
